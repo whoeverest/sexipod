@@ -33,13 +33,19 @@ app.use(expressValidator());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(session({
-    resave: true,
-    saveUninitialized: true,
-    // secret: SESSION_SECRET 
+   // Don't force the session to be saved back to the session store.
+    resave: false,
+    
+    // Don't force a session that is "uninitialized" to be saved to the store.
+    // Session object will not be stored in the session store.
+    // This will prevent a lot of empty session objects being stored.
+    saveUninitialized: false, 
+    
     // The problem with secret is that it needs to be of type 'string | string[]'.
-    // and it is for some reason 'string | undefined'
+    // and it is for some reason 'string | undefined'.
     // I should check that out soon.
     secret: "qwerty123456"
+    // secret: SESSION_SECRET 
 }));
 
 // Primary app routes
