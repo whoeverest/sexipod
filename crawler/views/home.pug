@@ -1,0 +1,18 @@
+doctype html
+
+html
+    head
+        title Sexipod Crawler
+    body
+        h2 SexiPod Crawler
+        hr
+        form(method="POST", action="/url")
+            p Enter an URL: 
+                input(type="text", name="url")
+                input(type="submit", value="Query")
+                include partials/flash
+
+        p
+            | Size (<i>in kilobytes</i>):
+            br
+            | Total links on the website:
