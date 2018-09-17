@@ -1,50 +1,38 @@
 import { Request, Response } from "express"
-
-const request = require('request');
-const cheerio = require('cheerio');
+import * as request from 'request';
+import * as cheerio from 'cheerio';
 
 class Ping {
     private _url: string;
 
-    private _links: number | undefined;
-    private _size: number | undefined;
-
     constructor (url: string) { 
         this._url = url; 
-
-        this.requestSize();
-        this.requestLinks();
     }
 
-    get links(): number | undefined {
-        return this._links;
-    }
-    
-    get size(): number | undefined {
-        return this._size;
-    }
-    
-    requestLinks(): void {
+    requestLinks(callback: (err: Error | null, numLinks: number | null) => void): void {
         let countedLinks: number = 0;
 
-        request(this._url, (error: any, response: any, html: any) => {
-            if (!error && response.statusCode == 200) {
-                const sourceCodeDump = cheerio.load(html);
-                sourceCodeDump("a").each(() => { countedLinks++; });
-
-                this._links = countedLinks;   
-            } else {
-                this._links = countedLinks;   
+        request(this._url, (error, response, html) => {
+            if (error) return callback(error, null);
+            if (response.statusCode !== 200) {
+                return callback(new Error('Response is not 200'), null);
             }
+            const sourceCodeDump = cheerio.load(html);
+            sourceCodeDump("a").each(() => { countedLinks++; });
+            callback(null, countedLinks);   
         });
     }
 
-    requestSize(): void {
-        request(this._url, (error: any, response: any, html: any) => {
-            if(response.headers["content-length"]) {
-                this._size = response.headers["content-length"];
+    requestSize(callback: (err: Error | null , calculatedSize: number | null) => void): void {
+        request(this._url, (error, response, _html) => {
+            if (error) {
+                return callback(error, null);
+            }
+            let contLength = response.headers["content-length"];
+            if (!contLength) {
+                callback(null, 0);
             } else {
-                this._size = 0;
+                callback(null, Number.parseInt(contLength, 10));
             }
         });
 
@@ -76,21 +64,17 @@ export let postURL = (req: Request, res: Response) => {
 
     let ping = new Ping(url);
 
-    setTimeout(() => {
-        let websiteSize: number | undefined = ping.size;
+    ping.requestSize((e, responseSize) => {
+        if (e) return res.status(500).end('something bad happened');
+        let websiteSize = responseSize;
         if (websiteSize) { websiteSize = websiteSize / 1000 };
-    
-        let websiteLinks: number | undefined = ping.links;
 
-        // It renders home, but stays at /url
-        // It should redirect to / and render home
-        // with the results
-        return res.render("home", {
-            title: "Home",
-            size: websiteSize,
-            links: websiteLinks
+        ping.requestLinks((err, numLinks) => {
+            if (err) return res.status(500).end('something even worse happened');
+            // It renders home, but stays at /url
+            // It should redirect to / and render home
+            // with the results
+            res.render("home", { size: websiteSize, links: numLinks });
         })
-    }, 1000);
+    });
 }
-
-
