@@ -77,10 +77,18 @@ export let postURL = (req: Request, res: Response) => {
     let ping = new Ping(url);
 
     setTimeout(() => {
+        let websiteSize: number | undefined = ping.size;
+        if (websiteSize) { websiteSize = websiteSize / 1000 };
+    
+        let websiteLinks: number | undefined = ping.links;
+
+        // It renders home, but stays at /url
+        // It should redirect to / and render home
+        // with the results
         return res.render("home", {
             title: "Home",
-            size: ping.size,
-            links: ping.links
+            size: websiteSize,
+            links: websiteLinks
         })
     }, 1000);
 }
