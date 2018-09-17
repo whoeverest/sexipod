@@ -1,5 +1,56 @@
 import { Request, Response } from "express"
 
+const request = require('request');
+const cheerio = require('cheerio');
+
+class Ping {
+    private _url: string;
+
+    private _links: number | undefined;
+    private _size: number | undefined;
+
+    constructor (url: string) { 
+        this._url = url; 
+
+        this.requestSize();
+        this.requestLinks();
+    }
+
+    get links(): number | undefined {
+        return this._links;
+    }
+    
+    get size(): number | undefined {
+        return this._size;
+    }
+    
+    requestLinks(): void {
+        let countedLinks: number = 0;
+
+        request(this._url, (error: any, response: any, html: any) => {
+            if (!error && response.statusCode == 200) {
+                const sourceCodeDump = cheerio.load(html);
+                sourceCodeDump("a").each(() => { countedLinks++; });
+
+                this._links = countedLinks;   
+            } else {
+                this._links = countedLinks;   
+            }
+        });
+    }
+
+    requestSize(): void {
+        request(this._url, (error: any, response: any, html: any) => {
+            if(response.headers["content-length"]) {
+                this._size = response.headers["content-length"];
+            } else {
+                this._size = 0;
+            }
+        });
+
+    }
+}
+
 // GET /
 // Home page of the crawler
 export let index = (req: Request, res: Response) => {
@@ -20,7 +71,18 @@ export let postURL = (req: Request, res: Response) => {
     }
     
     let url: string = req.body.url;
-    console.log("The URL is %s", url);
+    // TODO: Check if it is a valid URL
+    // FAIL if not.
 
-    return res.redirect("/");
+    let ping = new Ping(url);
+
+    setTimeout(() => {
+        return res.render("home", {
+            title: "Home",
+            size: ping.size,
+            links: ping.links
+        })
+    }, 1000);
 }
+
+
