@@ -1,6 +1,16 @@
 import { Request, Response } from "express"
 import * as request from 'request';
 import * as cheerio from 'cheerio';
+import * as Promise from 'bluebird';
+
+function requestAsync(url: string): Promise<{ response: request.Response, html: string }> {
+    return new Promise((resolve, reject) => {
+        request(url, (err, response, html) => {
+            if (err) return reject(err);
+            else resolve({ response, html });
+        })
+    })
+}
 
 class Ping {
     private _url: string;
@@ -9,70 +19,43 @@ class Ping {
         this._url = url; 
     }
 
-    requestSizePromise(): Promise<number | null> {
-        return new Promise((resolve, reject) => {
-            this.requestSize((err, calcSize) => {
-                if (err) { return reject(err); }
-
-                resolve(calcSize);
-            })
-        })
-    }
-
     makeRequest() {
-        return this.requestLinksPromise()
-        .then((numLinks) => {
-            return this.requestSizePromise()
-            .then((calcSize) => {
-                let d = {
-                    calcSize: calcSize,
-                    numLinks: numLinks
-                }
-                return d;
-            })
+        return Promise.all([
+            this.requestLinks(),
+            this.requestSize()
+        ]).then(arr => {
+            return {
+                calcSize: arr[0],
+                numLinks: arr[1]
+            }
         })
     }
 
-    requestLinksPromise(): Promise<number | null> {
-        return new Promise((resolve, reject) => {
-            this.requestLinks((err, numLinks) => {
-                if (err) { return reject(err) }
-
-                return resolve(numLinks);
-            })
-        })
-    }
-
-    
-
-    requestLinks(callback: (err: Error | null, numLinks: number | null) => void): void {
+    requestLinks(): Promise<number | null> {
         let countedLinks: number = 0;
-
-        request(this._url, (error, response, html) => {
-            if (error) return callback(error, null);
-            if (response.statusCode !== 200) {
-                return callback(new Error('Response is not 200'), null);
+        
+        return requestAsync(this._url)
+        .then((obj) => {
+            if (obj.response.statusCode !== 200) {
+                throw new Error('Response is not 200');
             }
-            const sourceCodeDump = cheerio.load(html);
-            sourceCodeDump("a").each(() => { countedLinks++; });
-            callback(null, countedLinks);   
-        });
+            const sourceCodeDump = cheerio.load(obj.html);
+            sourceCodeDump("a").each(() => { countedLinks++; }); 
+            
+            return countedLinks;
+        })   
     }
 
-    requestSize(callback: (err: Error | null , calculatedSize: number | null) => void): void {
-        request(this._url, (error, response, _html) => {
-            if (error) {
-                return callback(error, null);
-            }
-            let contLength = response.headers["content-length"];
-            if (!contLength) {
-                callback(null, 0);
-            } else {
+    requestSize(): Promise<number | null> {
+        return requestAsync(this._url)
+        .then((obj) => {
+            let contLength = obj.response.headers["content-length"];
+            if (!contLength) { return null; } 
+            else {
                 let contLengthKBS = Number.parseInt(contLength, 10) / 1000;
-                callback(null, contLengthKBS);
+                return contLengthKBS;
             }
-        });
-
+        })
     }
 }
 
@@ -105,7 +88,7 @@ export let postURL = (req: Request, res: Response) => {
     .then((d) => {
         res.render("home", { size: d.calcSize, links: d.numLinks });
     })
-    .catch((err) => { res.status(500).end("Something bad happened.") });
+    .catch((err) => { console.error(err); res.status(500).end("Server error 500!"); });
 
     // ping.requestSize((e, responseSize) => {
     //     if (e) return res.status(500).end('something bad happened');
