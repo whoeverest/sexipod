@@ -9,6 +9,42 @@ class Ping {
         this._url = url; 
     }
 
+    requestSizePromise(): Promise<number | null> {
+        return new Promise((resolve, reject) => {
+            this.requestSize((err, calcSize) => {
+                if (err) { return reject(err); }
+
+                resolve(calcSize);
+            })
+        })
+    }
+
+    makeRequest() {
+        return this.requestLinksPromise()
+        .then((numLinks) => {
+            return this.requestSizePromise()
+            .then((calcSize) => {
+                let d = {
+                    calcSize: calcSize,
+                    numLinks: numLinks
+                }
+                return d;
+            })
+        })
+    }
+
+    requestLinksPromise(): Promise<number | null> {
+        return new Promise((resolve, reject) => {
+            this.requestLinks((err, numLinks) => {
+                if (err) { return reject(err) }
+
+                return resolve(numLinks);
+            })
+        })
+    }
+
+    
+
     requestLinks(callback: (err: Error | null, numLinks: number | null) => void): void {
         let countedLinks: number = 0;
 
@@ -32,7 +68,8 @@ class Ping {
             if (!contLength) {
                 callback(null, 0);
             } else {
-                callback(null, Number.parseInt(contLength, 10));
+                let contLengthKBS = Number.parseInt(contLength, 10) / 1000;
+                callback(null, contLengthKBS);
             }
         });
 
@@ -58,23 +95,29 @@ export let postURL = (req: Request, res: Response) => {
         return res.redirect("/");
     }
     
-    let url: string = req.body.url;
     // TODO: Check if it is a valid URL
     // FAIL if not.
+    let url: string = req.body.url;
 
     let ping = new Ping(url);
 
-    ping.requestSize((e, responseSize) => {
-        if (e) return res.status(500).end('something bad happened');
-        let websiteSize = responseSize;
-        if (websiteSize) { websiteSize = websiteSize / 1000 };
+    ping.makeRequest()
+    .then((d) => {
+        res.render("home", { size: d.calcSize, links: d.numLinks });
+    })
+    .catch((err) => { res.status(500).end("Something bad happened.") });
 
-        ping.requestLinks((err, numLinks) => {
-            if (err) return res.status(500).end('something even worse happened');
-            // It renders home, but stays at /url
-            // It should redirect to / and render home
-            // with the results
-            res.render("home", { size: websiteSize, links: numLinks });
-        })
-    });
+    // ping.requestSize((e, responseSize) => {
+    //     if (e) return res.status(500).end('something bad happened');
+    //     let websiteSize = responseSize;
+    //     if (websiteSize) { websiteSize = websiteSize / 1000 };
+
+    //     ping.requestLinks((err, numLinks) => {
+    //         if (err) return res.status(500).end('something even worse happened');
+    //         // It renders home, but stays at /url
+    //         // It should redirect to / and render home
+    //         // with the results
+    //         res.render("home", { size: websiteSize, links: numLinks });
+    //     })
+    // });
 }
