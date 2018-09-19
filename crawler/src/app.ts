@@ -50,6 +50,6 @@ app.use(session({
 
 // Primary app routes
 app.get("/", crawlerHomeController.index);
-app.post("/url", crawlerHomeController.postURL);
+app.post("/", crawlerHomeController.postURL);
 
 export default app;
