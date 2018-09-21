@@ -7,7 +7,7 @@ import * as validate from 'validate.js';
 function requestAsync(url: string): Promise<{ response: request.Response, html: string }> {
     return new Promise((resolve, reject) => {
         request(url, (err, response, html) => {
-            if (err) return reject(err);
+            if (err) { reject(err) }
             else resolve({ response, html });
         })
     })
@@ -33,25 +33,26 @@ class Ping {
     }
 
     requestLinks(): Promise<number | null> {
-        let countedLinks: number = 0;
         
         return requestAsync(this._url)
         .then((obj) => {
-            if (obj.response.statusCode !== 200) {
-                throw new Error('Response is not 200');
-            }
+            if (obj.response.statusCode !== 200) { throw new Error('Response is not 200'); }
+
             const sourceCodeDump = cheerio.load(obj.html);
+
+            let countedLinks: number = 0;
             sourceCodeDump("a").each(() => { countedLinks++; }); 
-            
-            return countedLinks;
-        })   
+
+            if (countedLinks == 0) { return null; }
+            else { return countedLinks; }
+        })
     }
 
-    requestSize(): Promise<number | string> {
+    requestSize(): Promise<number | null> {
         return requestAsync(this._url)
         .then((obj) => {
             let contLength = obj.response.headers["content-length"];
-            if (!contLength) { return "none"; } 
+            if (!contLength) { return null; } 
             else {
                 let contLengthKBS = Number.parseInt(contLength, 10) / 1000;
                 return contLengthKBS;
@@ -76,7 +77,7 @@ export let postURL = (req: Request, res: Response) => {
     let errors = req.validationErrors();
     if (errors) {
         req.flash("blankURL", errors);
-        return res.render("home", {size: "none", links: "none"});
+        return res.render("home", {size: null, links: null});
     }
     
     let url: string = req.body.url;
@@ -84,14 +85,26 @@ export let postURL = (req: Request, res: Response) => {
 
     if(typeof checkUrl == 'object') {
         req.flash("urlValidate", "Not a valid URL! Use http:// or https:// in front of the domain.");
-        return res.render("home", {size: "none", links: "none"});
+        return res.render("home", {size: null, links: null});
     }
 
     let ping = new Ping(url);
 
     ping.makeRequest()
     .then((d) => {
+
+        if (!d.calcSize && !d.numLinks) {
+            req.flash("errors", "The website doesn't have any links nor size.");
+            return res.render("home", {size: null, links: null});     
+        }
+
+        req.flash("success", "The website was successfully requested. Retrieved results are below.");
         res.render("home", { size: d.calcSize, links: d.numLinks });
     })
-    .catch((err) => { console.error(err); res.status(500).end("Server error 500!"); });
+    .catch((err) => { 
+        if (err.code == 'ENOTFOUND') {
+            req.flash("requestStatusError", "Domain not found!");
+            return res.render("home", {size: null, links: null});
+        } else { res.status(500).end("Something bad happened. :D"); }
+    });
 }
