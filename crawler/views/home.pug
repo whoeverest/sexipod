@@ -2,19 +2,21 @@ doctype html
 
 html
     head
-        title Sexipod Crawler
+        title sexipod
 
         link(rel='stylesheet', href='/css/main.css')
     body
-        h2 Sexipod <small><i> crawler </i></small>
-        hr
-        form(method="POST", action="/")
-            p Enter an URL: 
-                input(type="text", name="url")
-                input(type="submit", value="Query")
-                include partials/flash
+        h3 Sexipod's future crawler!
+        | <small>... now only a tool for retrieving size and number of 
+        br
+        | links from a requested page.</small>
 
+        form(method="POST", action="/")
+            p
+                input(class="input" placeholder="use http:// or https://" type="text", name="url")
+                input(class="button" type="submit", value="Query")
+        
         p
-            | Size (<i>in kilobytes</i>): #{size}
-            br
-            | Total links on the website: #{links}
+            include partials/flash
+            include partials/result
+        

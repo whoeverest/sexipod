@@ -1,0 +1,19 @@
+if size && links
+    p
+        | Size (<i>in kilobytes</i>): #{size}
+        br
+        | Total links on the website: #{links}
+else if size && !links
+    p
+        | Size (<i>in kilobytes</i>): #{size}
+        br
+        | Total links on the website: none
+else if !size && links
+    p
+        | Size (<i>in kilobytes</i>): none
+        br
+        | Total links on the website: #{links}
+else
+    if messages.errors
+        for msg in messages.errors
+            div(class="err") #{msg}

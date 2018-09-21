@@ -5,3 +5,11 @@ if messages.blankURL
 if messages.urlValidate
   for error in messages.urlValidate
     div(class="err") #{error}
+
+if messages.requestStatusError
+  for error in messages.requestStatusError
+    div(class="err") #{error}
+
+if messages.success
+  for msg in messages.success
+    div(class="success") #{msg}
