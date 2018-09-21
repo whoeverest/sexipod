@@ -1,11 +1,7 @@
-if messages.errors
-  for error in messages.errors
-    div= error.msg
+if messages.blankURL
+  for error in messages.blankURL
+    div(class="err") #{error.msg}
 
-if messages.info
-  for info in messages.info
-    div= info.msg
-
-if messages.success
-  for success in messages.success
-    div= success.msg
+if messages.urlValidate
+  for error in messages.urlValidate
+    div(class="err") #{error}
