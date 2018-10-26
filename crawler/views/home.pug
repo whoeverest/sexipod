@@ -1,0 +1,23 @@
+doctype html
+
+html
+    head
+        title sexipod
+
+        link(rel='stylesheet', href='/css/main.css')
+    body
+        h2 Sexipod's future crawler!
+        p
+            | ... now only a tool for retrieving size and number of 
+            br
+            | links from a requested page.
+        br
+        form(method="POST", action="/")
+            p
+                input(class="input" placeholder="use http:// or https://" type="text", name="url")
+                input(class="button" type="submit", value="Query")
+        
+        p
+            include partials/flash
+            include partials/result
+        

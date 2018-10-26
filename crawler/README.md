@@ -20,5 +20,5 @@ npm run test
 Starting the app:
 
 ```
-npm run start
+npm start
 ```
