@@ -5,21 +5,27 @@
   "main": "build/index.js",
   "scripts": {
     "test": "jest",
-    "build": "tsc",
+    "build": "shx cp -R ./src/client ./build && tsc",
     "start": "node build/index.js",
     "watch": "ts-node-dev src/index.ts"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/express": "^4.0.37",
+    "@types/cheerio": "^0.22.13",
+    "@types/express": "^4.17.1",
+    "@types/request": "^2.48.3",
+    "@types/node": "^12.7.12",
+    "cheerio": "^1.0.0-rc.3",
     "express": "^4.17.1",
+    "request": "^2.88.0",
     "ts-node-dev": "^1.0.0-pre.43",
     "typescript": "^3.6.4"
   },
   "devDependencies": {
     "@types/jest": "^20.0.8",
     "jest": "^25.0.0",
+    "shx": "^0.3.2",
     "ts-jest": "^24.1.0"
   },
   "jest": {
