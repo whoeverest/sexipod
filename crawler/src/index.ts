@@ -7,11 +7,22 @@ const app = express();
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(`${__dirname}/client`));
 
+const checkURL = (url: string) => {
+  const parsed = new URL(url);
+  const hostnameFragments = parsed.hostname.split('.');
+  if (hostnameFragments[hostnameFragments.length -1 ] === 'mk') return true;
+  return false;
+}
+
 app.post('/crawl', async (req, res) => {
-  const page = await axios(req.body.url);
-  const $ = cheerio.load(page.data);
-  const links = $('a').length;
-  res.send(`The page ${req.body.url} is ${page.data.length / 1000} kilobytes big, and contains ${links} links.`);
+  if (checkURL(req.body.url)) {
+    const page = await axios(req.body.url);
+    const $ = cheerio.load(page.data);
+    const links = $('a').length;
+    res.send(`The page ${req.body.url} is ${page.data.length / 1000} kilobytes big, and contains ${links} links.`);
+  } else {
+    res.status(400).send('Non-mk domain received.');
+  }
 });
 
 app.get('/', express.static(`${__dirname}/client`));
