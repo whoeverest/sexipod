@@ -15,13 +15,17 @@ const checkURL = (url: string) => {
 }
 
 app.post('/crawl', async (req, res) => {
-  if (checkURL(req.body.url)) {
-    const page = await axios(req.body.url);
-    const $ = cheerio.load(page.data);
-    const links = $('a').length;
-    res.send(`The page ${req.body.url} is ${page.data.length / 1000} kilobytes big, and contains ${links} links.`);
-  } else {
-    res.status(400).send('Non-mk domain received.');
+  try {
+    if (checkURL(req.body.url)) {
+      const page = await axios(req.body.url);
+      const $ = cheerio.load(page.data);
+      const links = $('a').length;
+      res.send(`The page ${req.body.url} is ${page.data.length / 1000} kilobytes big, and contains ${links} links.`);
+    } else {
+      res.status(400).send('Non-mk domain received.');
+    }
+  } catch(err) {
+    res.status(400).send(`Request for <u>${req.body.url}</u> failed. Reason: <pre>${err.message}</pre>`);
   }
 });
 
